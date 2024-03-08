@@ -164,7 +164,7 @@ public fun String.parseDescription(): SceneDescription {
             sceneDescriptionBuilder.cameraBuilder.forward = Vector(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "CAMERA_FOV_X" -> {
-            require(command.parameters.size == 1)
+//            require(command.parameters.size == 1)
             require(sceneDescriptionBuilder.cameraBuilder.fovX == null)
             sceneDescriptionBuilder.cameraBuilder.fovX = command.parameters[0]
         }
