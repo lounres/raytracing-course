@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ppmWriter-jvm">
+    <output-path>$PROJECT_DIR$/ppmWriter/build/libs</output-path>
+    <root id="archive" name="ppmWriter-jvm.jar">
+      <element id="module-output" name="raytracing-course.ppmWriter.jvmMain" />
+    </root>
+  </artifact>
+</component>

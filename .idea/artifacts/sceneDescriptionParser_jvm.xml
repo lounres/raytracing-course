@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="sceneDescriptionParser-jvm">
+    <output-path>$PROJECT_DIR$/sceneDescriptionParser/build/libs</output-path>
+    <root id="archive" name="sceneDescriptionParser-jvm.jar">
+      <element id="module-output" name="raytracing-course.sceneDescriptionParser.jvmMain" />
+    </root>
+  </artifact>
+</component>
