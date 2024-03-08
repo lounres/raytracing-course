@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-./gradlew :app:run "--args=\"$1 $2\""
+./gradlew :app:run "--args=$1 $2"

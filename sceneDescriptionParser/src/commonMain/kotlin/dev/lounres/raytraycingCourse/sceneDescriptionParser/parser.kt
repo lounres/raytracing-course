@@ -119,7 +119,7 @@ internal data class Command(
 
 public fun String.parseDescription(): SceneDescription {
     val commands = this
-        .split("\r\n")
+        .split("\n")
         .filter { it.isNotBlank() }
         .map {
             val parts = it.split(" ")
