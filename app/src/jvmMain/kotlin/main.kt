@@ -7,7 +7,7 @@ import kotlin.math.round
 
 
 fun main(args: Array<String>) {
-    require(args.size == 2)
+    require(args.size == 2) { "Illegal number of arguments of the main program: ${args.size}. The arguments: ${args.contentToString()}" }
 
     val inputFile = Path(args[0])
     val outputFile = Path(args[1])

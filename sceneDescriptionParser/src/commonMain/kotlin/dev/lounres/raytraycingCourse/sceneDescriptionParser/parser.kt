@@ -21,7 +21,7 @@ internal data class SceneDescriptionBuilder(
         newSceneObject?.let { builtScene.add(it.build()) }
         return SceneDescription(
             scene = builtScene,
-            backgroundColor = backgroundColor ?: error("Background color is not set"),
+            backgroundColor = backgroundColor ?: throw IllegalArgumentException("Background color is not set"),
             camera = cameraBuilder.build()
         )
     }
@@ -37,13 +37,13 @@ internal data class CameraBuilder(
     var imageHeight: UInt? = null,
 ) {
     fun build(): Camera = Camera(
-        position = position ?: error("Camera position is not specified."),
-        right = right ?: error("Camera right vector is not specified."),
-        up = up ?: error("Camera up vector is not specified."),
-        forward = forward ?: error("Camera forward vector is not specified."),
-        fovX = fovX ?: error("Camera fovXTan is not specified."),
-        imageWidth = imageWidth ?: error("Camera image width is not specified."),
-        imageHeight = imageHeight ?: error("Camera image height is not specified."),
+        position = position ?: throw IllegalArgumentException("Camera position is not specified."),
+        right = right ?: throw IllegalArgumentException("Camera right vector is not specified."),
+        up = up ?: throw IllegalArgumentException("Camera up vector is not specified."),
+        forward = forward ?: throw IllegalArgumentException("Camera forward vector is not specified."),
+        fovX = fovX ?: throw IllegalArgumentException("Camera fovXTan is not specified."),
+        imageWidth = imageWidth ?: throw IllegalArgumentException("Camera image width is not specified."),
+        imageHeight = imageHeight ?: throw IllegalArgumentException("Camera image height is not specified."),
     )
 }
 
@@ -54,7 +54,7 @@ internal data class SceneObjectBuilder(
     fun build(): SceneObject =
         SceneObject(
             figure = figureBuilder.build(),
-            color = color ?: error("Scene object color is not specified."),
+            color = color ?: throw IllegalArgumentException("Scene object color is not specified."),
         )
 }
 
@@ -117,12 +117,16 @@ internal data class Command(
     val parameters: List<Double>,
 )
 
+internal fun Command.requireNumberOfArguments(expectedNumber: Int) {
+    require(this.parameters.size == expectedNumber) { "Illegal number of arguments of '${this.command}' command: ${this.parameters.size}. Got a command '${this.command} ${this.parameters.joinToString(prefix = "", postfix = "")}'." }
+}
+
 public fun String.parseDescription(): SceneDescription {
     val commands = this
-        .split("\n")
+        .lines()
         .filter { it.isNotBlank() }
-        .map {
-            val parts = it.split(" ")
+        .map { line ->
+            val parts = line.split(" ")
             Command(
                 command = parts[0],
                 parameters = parts.drop(1).map { it.toDouble() }
@@ -133,57 +137,57 @@ public fun String.parseDescription(): SceneDescription {
 
     for (command in commands) when (command.command) {
         "DIMENSIONS" -> {
-            require(command.parameters.size == 2)
-            require(sceneDescriptionBuilder.cameraBuilder.imageWidth == null && sceneDescriptionBuilder.cameraBuilder.imageHeight == null)
+            command.requireNumberOfArguments(2)
+            require(sceneDescriptionBuilder.cameraBuilder.imageWidth == null && sceneDescriptionBuilder.cameraBuilder.imageHeight == null) { "Either image width or height is already set." }
             sceneDescriptionBuilder.cameraBuilder.imageWidth = command.parameters[0].toUInt()
             sceneDescriptionBuilder.cameraBuilder.imageHeight = command.parameters[1].toUInt()
         }
         "BG_COLOR" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.backgroundColor == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.backgroundColor == null) { "Background color is already set." }
             sceneDescriptionBuilder.backgroundColor = Color(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "CAMERA_POSITION" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.cameraBuilder.position == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.cameraBuilder.position == null) { "Camera position is already set." }
             sceneDescriptionBuilder.cameraBuilder.position = Point(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "CAMERA_RIGHT" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.cameraBuilder.right == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.cameraBuilder.right == null) { "Camera right vector is already set." }
             sceneDescriptionBuilder.cameraBuilder.right = Vector(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "CAMERA_UP" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.cameraBuilder.up == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.cameraBuilder.up == null) { "Camera up vector is already set." }
             sceneDescriptionBuilder.cameraBuilder.up = Vector(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "CAMERA_FORWARD" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.cameraBuilder.forward == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.cameraBuilder.forward == null) { "Camera forward vector is already set." }
             sceneDescriptionBuilder.cameraBuilder.forward = Vector(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "CAMERA_FOV_X" -> {
-//            require(command.parameters.size == 1)
-            require(sceneDescriptionBuilder.cameraBuilder.fovX == null)
+//            command.requireNumberOfArguments(1)
+            require(sceneDescriptionBuilder.cameraBuilder.fovX == null) { "Camera horizontal field of view is already set." }
             sceneDescriptionBuilder.cameraBuilder.fovX = command.parameters[0]
         }
         "NEW_PRIMITIVE" -> {
-            require(command.parameters.size == 0)
+            command.requireNumberOfArguments(0)
             sceneDescriptionBuilder.newSceneObject?.let { oldSceneObject -> sceneDescriptionBuilder.builtScene.add(oldSceneObject.build()) }
             sceneDescriptionBuilder.newSceneObject = null
         }
         "PLANE" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.newSceneObject == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.newSceneObject == null) { "Previous scene object is not yet processed. Probably there is a scene object declaration without 'NEW_PRIMITIVE' command" }
             sceneDescriptionBuilder.newSceneObject =
                 SceneObjectBuilder(
                     figureBuilder = PlaneBuilder(normal = Vector(command.parameters[0], command.parameters[1], command.parameters[2]))
                 )
         }
         "ELLIPSOID" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.newSceneObject == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.newSceneObject == null) { "Previous scene object is not yet processed. Probably there is a scene object declaration without 'NEW_PRIMITIVE' command" }
             sceneDescriptionBuilder.newSceneObject =
                 SceneObjectBuilder(
                     figureBuilder = EllipsoidBuilder(
@@ -194,8 +198,8 @@ public fun String.parseDescription(): SceneDescription {
                 )
         }
         "BOX" -> {
-            require(command.parameters.size == 3)
-            require(sceneDescriptionBuilder.newSceneObject == null)
+            command.requireNumberOfArguments(3)
+            require(sceneDescriptionBuilder.newSceneObject == null) { "Previous scene object is not yet processed. Probably there is a scene object declaration without 'NEW_PRIMITIVE' command" }
             sceneDescriptionBuilder.newSceneObject =
                 SceneObjectBuilder(
                     figureBuilder = BoxBuilder(
@@ -206,24 +210,24 @@ public fun String.parseDescription(): SceneDescription {
                 )
         }
         "POSITION" -> {
-            require(command.parameters.size == 3)
+            command.requireNumberOfArguments(3)
             val newSceneObject = sceneDescriptionBuilder.newSceneObject
-            require(newSceneObject != null)
-            require(newSceneObject.figureBuilder.position == null)
+            require(newSceneObject != null) { "Cannot assign position. There is no current scene object to process." }
+            require(newSceneObject.figureBuilder.position == null) { "Scene object position is already set." }
             newSceneObject.figureBuilder.position = Point(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "ROTATION" -> {
-            require(command.parameters.size == 4)
+            command.requireNumberOfArguments(4)
             val newSceneObject = sceneDescriptionBuilder.newSceneObject
-            require(newSceneObject != null)
-            require(newSceneObject.figureBuilder.rotation == null)
+            require(newSceneObject != null) { "Cannot assign rotation. There is no current scene object to process." }
+            require(newSceneObject.figureBuilder.rotation == null) { "Scene object rotation is already set." }
             newSceneObject.figureBuilder.rotation = Rotation(x = command.parameters[0], y = command.parameters[1], z = command.parameters[2], w = command.parameters[3])
         }
         "COLOR" -> {
-            require(command.parameters.size == 3)
+            command.requireNumberOfArguments(3)
             val newSceneObject = sceneDescriptionBuilder.newSceneObject
-            require(newSceneObject != null)
-            require(newSceneObject.color == null)
+            require(newSceneObject != null) { "Cannot assign color. There is no current scene object to process." }
+            require(newSceneObject.color == null) { "Scene object color is already set." }
             newSceneObject.color = Color(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         else -> println("Unknown command: ${command.command} ${command.parameters.joinToString()}")
