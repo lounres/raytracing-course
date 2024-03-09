@@ -1,8 +1,0 @@
-<component name="ArtifactManager">
-  <artifact type="jar" name="quaternions-jvm">
-    <output-path>$PROJECT_DIR$/quaternions/build/libs</output-path>
-    <root id="archive" name="quaternions-jvm.jar">
-      <element id="module-output" name="raytracing-course.quaternions.jvmMain" />
-    </root>
-  </artifact>
-</component>

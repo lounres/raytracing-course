@@ -4,6 +4,7 @@ import dev.lounres.raytracingCourse.euclideanGeometry.Vector
 import dev.lounres.raytracingCourse.quaternions.Quaternion
 import kotlin.jvm.JvmInline
 
+
 @JvmInline
 public value class Rotation(public val quaternion: Quaternion) {
     public constructor(w: Double, x: Double, y: Double, z: Double) : this(Quaternion(w, x, y, z))

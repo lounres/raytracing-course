@@ -6,7 +6,7 @@ import dev.lounres.raytracingCourse.euclideanGeometry.minus
 import kotlin.math.*
 
 
-public sealed interface Figure {
+public interface Figure {
     public infix fun intersect(ray: Ray): Double?
 }
 

@@ -75,7 +75,7 @@ internal data class PlaneBuilder(
         val actualPosition = position ?: Point(0.0, 0.0, 0.0)
         return Plane(
             normal = actualNormal,
-            valueAtZero = -(actualPosition.x * actualNormal.x + actualPosition.y * actualNormal.y + actualPosition.z * actualNormal.z),
+            valueAtZero = actualPosition.x * actualNormal.x + actualPosition.y * actualNormal.y + actualPosition.z * actualNormal.z,
         )
     }
 }

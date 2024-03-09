@@ -15,9 +15,9 @@ public fun Camera.rayForPixel(x: UInt, y: UInt): Ray =
 
 public typealias Scene = Set<SceneObject>
 
-public data class Intersection(val moment: Double, val color: Color)
+internal data class Intersection(val moment: Double, val color: Color)
 
-public infix fun Scene.intersect(ray: Ray): Intersection? {
+internal infix fun Scene.intersect(ray: Ray): Intersection? {
     var closestIntersection: Intersection? = null
     for (obj in this) {
         val intersectionMoment = obj.figure intersect ray
