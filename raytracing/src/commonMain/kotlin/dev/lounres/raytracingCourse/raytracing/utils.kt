@@ -13,20 +13,32 @@ public fun Camera.rayForPixel(x: UInt, y: UInt): Ray =
             forward
     )
 
-public typealias Scene = Set<SceneObject>
-
-internal data class Intersection(val moment: Double, val color: Color)
-
-internal infix fun Scene.intersect(ray: Ray): Intersection? {
-    var closestIntersection: Intersection? = null
-    for (obj in this) {
-        val intersectionMoment = obj.figure intersect ray
-        if (intersectionMoment != null && (closestIntersection == null || closestIntersection.moment > intersectionMoment))
-            closestIntersection = Intersection(moment = intersectionMoment, color = obj.color)
-    }
-    return closestIntersection
+public fun acesToneMapping(lightIntensity: LightIntensity): Color {
+    val a = 2.51f
+    val b = 0.03f
+    val c = 2.43f
+    val d = 0.59f
+    val e = 0.14f
+    fun acesToneMapping(lightIntensity: Double): Double = ((a * lightIntensity + b) * lightIntensity) / ((c * lightIntensity + d) * lightIntensity + e)
+    return Color(
+        r = acesToneMapping(lightIntensity.r),
+        g = acesToneMapping(lightIntensity.g),
+        b = acesToneMapping(lightIntensity.b),
+    )
 }
 
-public fun Scene.trace(ray: Ray, backgroundColor: Color): Color {
-    return (this intersect ray)?.color ?: backgroundColor
-}
+public fun Scene.trace(ray: Ray, recursionLimit: UInt): Color =
+    ray.intersect(scene = this)?.let {
+        val sceneObject = this.sceneObjects[it.sceneObjectIndex]
+        acesToneMapping(
+            sceneObject.material.getLightIntensityOf(
+                scene = this,
+                currentSceneObjectIndex = it.sceneObjectIndex,
+                incomingRay = Ray(
+                    position = ray.atMoment(it.moment),
+                    direction = ray.direction
+                ),
+                timeToLive = recursionLimit,
+            )
+        )
+    } ?: backgroundColor
