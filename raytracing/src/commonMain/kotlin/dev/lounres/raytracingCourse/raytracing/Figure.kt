@@ -143,11 +143,12 @@ public data class Box(val sizeX: Double, val sizeY: Double, val sizeZ: Double, v
         }
 
         return (if (t1 + t2 > 0.0) t1 else t2).let {
-            when {
+            val normal = when {
                 it == t1 -> t1Normal
                 it == t2 -> t2Normal
                 else -> error("For some reason could not find normal at incoming ray $incomingRay with plane $this")
             }
+            rotation.applyTo(normal)
         }.let { if (it dot incomingRay.direction > 0.0) -it else it }
     }
 }
