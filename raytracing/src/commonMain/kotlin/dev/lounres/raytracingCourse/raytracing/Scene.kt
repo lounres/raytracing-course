@@ -22,7 +22,7 @@ public data class Intersection(
 public fun Ray.intersect(scene: Scene, fromSceneObject: Int? = null): Intersection? {
     var closestIntersection: Intersection? = null
     for ((sceneObjectIndex, sceneObject) in scene.sceneObjects.withIndex()) {
-        val intersectionMoment = if (sceneObjectIndex != fromSceneObject) sceneObject.figure intersect this else sceneObject.figure intersectFromSurface this
+        val intersectionMoment = if (sceneObjectIndex != fromSceneObject) sceneObject.figure.intersect(this) else sceneObject.figure.intersectAgain(this)
         if (intersectionMoment != null && (closestIntersection == null || closestIntersection.moment > intersectionMoment))
             closestIntersection = Intersection(moment = intersectionMoment, sceneObjectIndex = sceneObjectIndex)
     }

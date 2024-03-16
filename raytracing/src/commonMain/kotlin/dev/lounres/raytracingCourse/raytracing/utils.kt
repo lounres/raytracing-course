@@ -2,6 +2,7 @@ package dev.lounres.raytracingCourse.raytracing
 
 import dev.lounres.raytracingCourse.euclideanGeometry.plus
 import dev.lounres.raytracingCourse.euclideanGeometry.times
+import kotlin.math.pow
 
 
 public fun Camera.rayForPixel(x: UInt, y: UInt): Ray =
@@ -27,18 +28,30 @@ public fun acesToneMapping(lightIntensity: LightIntensity): Color {
     )
 }
 
+public fun gammaCorrection(color: Color): Color {
+    val gammaFactor = 1 / 2.2
+    fun gammaCorrection(color: Double): Double = color.pow(gammaFactor)
+    return Color(
+        r = gammaCorrection(color.r),
+        g = gammaCorrection(color.g),
+        b = gammaCorrection(color.b),
+    )
+}
+
 public fun Scene.trace(ray: Ray, recursionLimit: UInt): Color =
     ray.intersect(scene = this)?.let {
         val sceneObject = this.sceneObjects[it.sceneObjectIndex]
-        acesToneMapping(
-            sceneObject.material.getLightIntensityOf(
-                scene = this,
-                currentSceneObjectIndex = it.sceneObjectIndex,
-                incomingRay = Ray(
-                    position = ray.atMoment(it.moment),
-                    direction = ray.direction
-                ),
-                timeToLive = recursionLimit,
+        gammaCorrection(
+            acesToneMapping(
+                sceneObject.material.getLightIntensityOf(
+                    scene = this,
+                    currentSceneObjectIndex = it.sceneObjectIndex,
+                    incomingRay = Ray(
+                        position = ray.atMoment(it.moment),
+                        direction = ray.direction
+                    ),
+                    timeToLive = recursionLimit,
+                )
             )
         )
     } ?: backgroundColor

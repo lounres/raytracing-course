@@ -10,9 +10,9 @@ public data class FigureIntersection(
 )
 
 public interface Figure {
-    public infix fun intersect(ray: Ray): Double?
-    public infix fun intersectFromSurface(incomingRay: Ray): Double?
-    public fun normalAt(incomingRay: Ray): Vector
+    public fun intersect(ray: Ray): Double?
+    public fun intersectAgain(incomingRay: Ray): Double?
+    public fun normalFor(incomingRay: Ray): Vector
 }
 
 public data class Plane(val normal: Vector, val valueAtZero: Double) : Figure {
@@ -26,8 +26,8 @@ public data class Plane(val normal: Vector, val valueAtZero: Double) : Figure {
 
         return if (result <= 0.0) null else result
     }
-    override fun intersectFromSurface(incomingRay: Ray): Double? = null
-    override fun normalAt(incomingRay: Ray): Vector = if (normal dot incomingRay.direction <= .0) normal else -normal
+    override fun intersectAgain(incomingRay: Ray): Double? = null
+    override fun normalFor(incomingRay: Ray): Vector = if (normal dot incomingRay.direction <= 0.0) normal else -normal
 }
 
 public data class Ellipsoid(val rX: Double, val rY: Double, val rZ: Double, val position: Point, val rotation: Rotation) : Figure {
@@ -56,7 +56,7 @@ public data class Ellipsoid(val rX: Double, val rY: Double, val rZ: Double, val 
             else -> null
         }
     }
-    override fun intersectFromSurface(incomingRay: Ray): Double? {
+    override fun intersectAgain(incomingRay: Ray): Double? {
         val (pX, pY, pZ) = rotation.inverseApplyTo(incomingRay.position - this.position)
         val (dX, dY, dZ) = rotation.inverseApplyTo(incomingRay.direction)
 
@@ -72,10 +72,11 @@ public data class Ellipsoid(val rX: Double, val rY: Double, val rZ: Double, val 
 
         return (-2 * b / a).let { if (it <= 0.0) null else it }
     }
-    override fun normalAt(incomingRay: Ray): Vector =
-        (incomingRay.position - this.position)
-            .let { Vector(it.x / (rX * rX), it.y / (rY * rY), it.z / (rZ * rZ)) }
-            .let { if (it dot incomingRay.direction >= 0.0) -it else it }
+    override fun normalFor(incomingRay: Ray): Vector {
+        val relativePosition = incomingRay.position - this.position
+        val outerNormalVector = Vector(relativePosition.x / (rX * rX), relativePosition.y / (rY * rY), relativePosition.z / (rZ * rZ))
+        return if (outerNormalVector dot incomingRay.direction >= 0.0) -outerNormalVector else outerNormalVector
+    }
 }
 
 public data class Box(val sizeX: Double, val sizeY: Double, val sizeZ: Double, val position: Point, val rotation: Rotation) : Figure {
@@ -100,7 +101,7 @@ public data class Box(val sizeX: Double, val sizeY: Double, val sizeZ: Double, v
             else -> null
         }
     }
-    override fun intersectFromSurface(incomingRay: Ray): Double? {
+    override fun intersectAgain(incomingRay: Ray): Double? {
         val (pX, pY, pZ) = rotation.inverseApplyTo(incomingRay.position - position)
         val (dX, dY, dZ) = rotation.inverseApplyTo(incomingRay.direction)
 
@@ -116,7 +117,7 @@ public data class Box(val sizeX: Double, val sizeY: Double, val sizeZ: Double, v
 
         return (if (t1 + t2 > 0.0) t2 else t1).let { if (it <= 0.0) null else it }
     }
-    override fun normalAt(incomingRay: Ray): Vector {
+    override fun normalFor(incomingRay: Ray): Vector {
         val (pX, pY, pZ) = rotation.inverseApplyTo(incomingRay.position - position)
         val (dX, dY, dZ) = rotation.inverseApplyTo(incomingRay.direction)
 
@@ -142,13 +143,9 @@ public data class Box(val sizeX: Double, val sizeY: Double, val sizeZ: Double, v
             else -> error("For some reason could not find normal at incoming ray $incomingRay with plane $this")
         }
 
-        return (if (t1 + t2 > 0.0) t1 else t2).let {
-            val normal = when {
-                it == t1 -> t1Normal
-                it == t2 -> t2Normal
-                else -> error("For some reason could not find normal at incoming ray $incomingRay with plane $this")
-            }
-            rotation.applyTo(normal)
-        }.let { if (it dot incomingRay.direction > 0.0) -it else it }
+        val rotatedNormalVector = if (t1 + t2 > 0.0) t1Normal else t2Normal
+        val normalVector = rotation.applyTo(rotatedNormalVector)
+
+        return if (normalVector dot incomingRay.direction > 0.0) -normalVector else normalVector
     }
 }

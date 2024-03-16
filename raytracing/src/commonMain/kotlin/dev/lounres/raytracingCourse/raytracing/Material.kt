@@ -7,7 +7,7 @@ public interface Material {
 
 public object Diffusive: Material {
     override fun getLightIntensityOf(scene: Scene, currentSceneObjectIndex: Int, incomingRay: Ray, timeToLive: UInt): LightIntensity {
-        val normal = scene.sceneObjects[currentSceneObjectIndex].figure.normalAt(incomingRay)
+        val normal = scene.sceneObjects[currentSceneObjectIndex].figure.normalFor(incomingRay)
         val lightIntensity = scene.lightSources.fold(scene.ambientLight) { lightIntensityAccumulator, lightSource ->
             lightIntensityAccumulator + lightSource.lightIntensityAt(
                 scene = scene,
