@@ -5,6 +5,9 @@ public data class LightIntensity(
     public val g: Double,
     public val b: Double,
 ) {
+    init {
+        require(r >= 0.0 && g >= 0.0 && b >= 0.0) { "Light intensity cannot be negative." }
+    }
 
     public operator fun plus(other: LightIntensity): LightIntensity =
         LightIntensity(

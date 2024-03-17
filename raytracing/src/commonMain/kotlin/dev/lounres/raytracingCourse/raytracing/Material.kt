@@ -23,7 +23,7 @@ public object Diffusive: Material {
 public object Metallic: Material {
     context(Scene.LocalEnvironment)
     override fun traceIncomingRay(incomingRay: Vector, objectColor: Color): LightIntensity =
-        traceOutgoingRay(incomingRay - localOuterNormal * (localOuterNormal dot incomingRay * 2.0 / localOuterNormal.length.pow(2))) * objectColor
+        traceOutgoingRay(incomingRay - localOuterNormal * (localOuterNormal dot incomingRay * 2.0 / localOuterNormal.norm)) * objectColor
 }
 
 public class Dielectric(
@@ -31,7 +31,7 @@ public class Dielectric(
 ): Material {
     context(Scene.LocalEnvironment)
     override fun traceIncomingRay(incomingRay: Vector, objectColor: Color): LightIntensity {
-        val reflectedVector = incomingRay - localOuterNormal * (localOuterNormal dot incomingRay * 2.0 / localOuterNormal.length.pow(2))
+        val reflectedVector = incomingRay - localOuterNormal * (localOuterNormal dot incomingRay * 2.0 / localOuterNormal.norm)
 
         val etaRatio = if (localOuterNormal dot incomingRay > 0.0) 1 / indexOfReflection else indexOfReflection
         val cosTheta1 = abs(localOuterNormal dot incomingRay / localOuterNormal.length / incomingRay.length)

@@ -78,10 +78,10 @@ public data class Ellipsoid(val rX: Double, val rY: Double, val rZ: Double, val 
         return (-2 * b / a).let { if (it <= 0.0) null else it }
     }
     override fun outerNormalFor(position: Point): Vector {
-        val relativePosition = position - this.position
+        val relativePosition = rotation.inverseApplyTo(position - this.position)
         val correction = sqrt(relativePosition.x * relativePosition.x + relativePosition.y * relativePosition.y + relativePosition.z * relativePosition.z)
         val outerNormalVector = Vector(relativePosition.x / (rX * rX), relativePosition.y / (rY * rY), relativePosition.z / (rZ * rZ)) / correction
-        return outerNormalVector
+        return rotation.applyTo(outerNormalVector)
     }
 }
 

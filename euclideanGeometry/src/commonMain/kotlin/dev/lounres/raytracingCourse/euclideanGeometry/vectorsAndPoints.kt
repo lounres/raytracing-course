@@ -21,5 +21,6 @@ public operator fun Point.plus(other: Vector): Point = Point(this.x + other.x, t
 public operator fun Point.minus(other: Point): Vector = Vector(this.x - other.x, this.y - other.y, this.z - other.z)
 
 public val Vector.length: Double get() = sqrt(x * x + y * y + z * z)
+public val Vector.norm: Double get() = x * x + y * y + z * z
 
 public infix fun Vector.dot(other: Vector): Double = x * other.x + y * other.y + z * other.z
