@@ -74,7 +74,7 @@ public data class SimpleScene(
                 val nextLocalEnvironment = LocalEnvironmentImpl(
                     currentObject = nextIntersection.sceneObjectIndex,
                     position = nextPosition,
-                    localOuterNormal = nextObject.figure.outerNormalFor(nextPosition), // TODO: Replace with new normal function
+                    localOuterNormal = nextObject.figure.outerNormalFor(nextPosition),
                     recursionLimit = recursionLimit - 1u,
                 )
                 with(nextLocalEnvironment) { nextObject.material.traceIncomingRay(outgoingRayDirection, nextObject.color) }
@@ -90,7 +90,7 @@ public data class SimpleScene(
             val nextLocalEnvironment = LocalEnvironmentImpl(
                 currentObject = nextIntersection.sceneObjectIndex,
                 position = nextPosition,
-                localOuterNormal = nextObject.figure.outerNormalFor(position = nextPosition), // TODO: Replace with new normal function
+                localOuterNormal = nextObject.figure.outerNormalFor(position = nextPosition),
                 recursionLimit = recursionLimit,
             )
             with(nextLocalEnvironment) { nextObject.material.traceIncomingRay(ray.direction, nextObject.color) }
