@@ -3,10 +3,16 @@ package dev.lounres.raytraycingCourse.sceneDescriptionParser
 import dev.lounres.raytracingCourse.euclideanGeometry.Point
 import dev.lounres.raytracingCourse.euclideanGeometry.Vector
 import dev.lounres.raytracingCourse.raytracing.*
+import dev.lounres.raytracingCourse.raytracing.figure.Box
+import dev.lounres.raytracingCourse.raytracing.figure.Ellipsoid
+import dev.lounres.raytracingCourse.raytracing.figure.Figure
+import dev.lounres.raytracingCourse.raytracing.figure.Plane
+import dev.lounres.raytracingCourse.raytracing.light.Color
+import dev.lounres.raytracingCourse.raytracing.light.LightIntensity
 
 
 public data class SceneDescription(
-    val scene: Scene,
+    val scene: SimpleScene,
     val camera: Camera,
     val recursionLimit: UInt,
 )
@@ -25,18 +31,18 @@ internal data class SceneDescriptionBuilder(
 }
 
 internal data class SceneBuilder(
-    var backgroundColor: Color? = null,
+    var backgroundColor: LightIntensity? = null,
     val sceneObjects: MutableList<SceneObject> = mutableListOf(),
     var newSceneObject: SceneObjectBuilder? = null,
     var ambientLight: LightIntensity? = null,
     val lightSources: MutableList<LightSource> = mutableListOf(),
     var newLightSource: LightSourceBuilder? = null,
 ) {
-    fun build(): Scene {
+    fun build(): SimpleScene {
         newSceneObject?.let { sceneObjects.add(it.build()) }
         newLightSource?.let { lightSources.add(it.build()) }
-        return Scene(
-            backgroundColor = backgroundColor ?: throw IllegalArgumentException("Background color is not specified."),
+        return SimpleScene(
+            backgroundLightIntensity = backgroundColor ?: throw IllegalArgumentException("Background color is not specified."),
             sceneObjects = sceneObjects,
             ambientLight = ambientLight ?: throw IllegalArgumentException("Ambient light is not specified."),
             lightSources = lightSources,
@@ -67,17 +73,37 @@ internal data class CameraBuilder(
 internal data class SceneObjectBuilder(
     val figureBuilder: FigureBuilder,
     var color: Color? = null,
-    var material: Material? = null,
+    var materialBuilder: MaterialBuilder? = null,
 ) {
     fun build(): SceneObject =
         SceneObject(
             figure = figureBuilder.build(),
             color = color ?: throw IllegalArgumentException("Scene object color is not specified."),
-            material = material ?: Diffusive,
+            material = (materialBuilder ?: DiffusiveBuilder).build(),
         )
 }
 
-internal sealed interface FigureBuilder {
+internal interface MaterialBuilder {
+    fun build(): Material
+}
+
+internal object DiffusiveBuilder: MaterialBuilder {
+    override fun build(): Diffusive = Diffusive
+}
+
+internal object MetallicBuilder: MaterialBuilder {
+    override fun build(): Metallic = Metallic
+}
+
+internal data class DielectricBuilder(
+    var indexOfReflection: Double? = null
+): MaterialBuilder {
+    override fun build(): Dielectric = Dielectric(
+        indexOfReflection = indexOfReflection ?: throw IllegalArgumentException("Scene object dielectric material index of reflection is not specified.")
+    )
+}
+
+internal interface FigureBuilder {
     fun build(): Figure
     var position: Point?
     var rotation: Rotation?
@@ -197,7 +223,7 @@ public fun String.parseDescription(): SceneDescription {
         "BG_COLOR" -> {
             command.requireNumberOfArguments(3)
             require(sceneDescriptionBuilder.sceneBuilder.backgroundColor == null) { "Background color is already specified." }
-            sceneDescriptionBuilder.sceneBuilder.backgroundColor = Color(command.parameters[0], command.parameters[1], command.parameters[2])
+            sceneDescriptionBuilder.sceneBuilder.backgroundColor = LightIntensity(command.parameters[0], command.parameters[1], command.parameters[2])
         }
         "RAY_DEPTH" -> {
             command.requireNumberOfArguments(1)
@@ -295,19 +321,24 @@ public fun String.parseDescription(): SceneDescription {
         "METALLIC" -> {
             command.requireNumberOfArguments(0)
             val newSceneObject = sceneDescriptionBuilder.sceneBuilder.newSceneObject
-            require(newSceneObject != null) { "Cannot assign rotation. There is no current scene object to process." }
-            require(newSceneObject.material == null) { "Scene object material is already specified." }
-            newSceneObject.material = Metallic
+            require(newSceneObject != null) { "Cannot assign metallic material. There is no current scene object to process." }
+            require(newSceneObject.materialBuilder == null) { "Scene object material is already specified." }
+            newSceneObject.materialBuilder = MetallicBuilder
         }
         "DIELECTRIC" -> {
             command.requireNumberOfArguments(0)
             val newSceneObject = sceneDescriptionBuilder.sceneBuilder.newSceneObject
-            require(newSceneObject != null) { "Cannot assign rotation. There is no current scene object to process." }
-            require(newSceneObject.material == null) { "Scene object material is already specified." }
-            newSceneObject.material = Dielectric
+            require(newSceneObject != null) { "Cannot assign dielectric material. There is no current scene object to process." }
+            require(newSceneObject.materialBuilder == null) { "Scene object material is already specified." }
+            newSceneObject.materialBuilder = DielectricBuilder()
         }
         "IOR" -> {
-            TODO("Command is not yet supported")
+            command.requireNumberOfArguments(1)
+            val newSceneObject = sceneDescriptionBuilder.sceneBuilder.newSceneObject
+            require(newSceneObject != null) { "Cannot assign dielectric material index of reflection. There is no current scene object to process." }
+            val newSceneObjectMaterialBuilder = newSceneObject.materialBuilder
+            require(newSceneObjectMaterialBuilder is DielectricBuilder) { "Scene object material is already specified." }
+            newSceneObjectMaterialBuilder.indexOfReflection = command.parameters[0]
         }
         "NEW_LIGHT" -> {
             command.requireNumberOfArguments(0)

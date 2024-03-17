@@ -14,6 +14,8 @@ public operator fun Vector.minus(other: Vector): Vector = Vector(this.x - other.
 
 public operator fun Vector.times(other: Double): Vector = Vector(this.x * other, this.y * other, this.z * other)
 
+public operator fun Vector.div(other: Double): Vector = Vector(this.x / other, this.y / other, this.z / other)
+
 public operator fun Point.plus(other: Vector): Point = Point(this.x + other.x, this.y + other.y, this.z + other.z)
 
 public operator fun Point.minus(other: Point): Vector = Vector(this.x - other.x, this.y - other.y, this.z - other.z)

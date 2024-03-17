@@ -1,4 +1,3 @@
-import dev.lounres.raytracingCourse.raytracing.*
 import dev.lounres.raytraycingCourse.ppmWriter.writePpmImage
 import dev.lounres.raytraycingCourse.sceneDescriptionParser.parseDescription
 import kotlin.io.path.Path
@@ -20,8 +19,6 @@ fun main(args: Array<String>) {
         bytesToWrite =
             buildList<Byte>((camera.imageHeight * camera.imageWidth).toInt() * 3) {
                 for (y in (camera.imageHeight - 1u) downTo 0u) for (x in 0u..<camera.imageWidth) {
-                    if (x == 750u && y == camera.imageHeight - 775u)
-                        run {}
                     val pixelRay = camera.rayForPixel(x, y)
                     val pixelColor = scene.trace(ray = pixelRay, recursionLimit = recursionLimit)
                     add(round(255 * pixelColor.r).toInt().toByte())
