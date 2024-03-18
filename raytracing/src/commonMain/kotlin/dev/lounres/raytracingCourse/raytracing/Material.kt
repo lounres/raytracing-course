@@ -39,7 +39,7 @@ public class Dielectric(
 
         return if (sinTheta2 < 1.0) {
             val cosTheta2 = sqrt(1 - sinTheta2 * sinTheta2)
-            val refractedVector = incomingRay * etaRatio + localOuterNormal.let { if (it dot incomingRay > 0.0) it else -it } * (etaRatio * cosTheta1 - cosTheta2)
+            val refractedVector = incomingRay.normalized() * etaRatio + localOuterNormal.normalized().let { if (it dot incomingRay > 0.0) it else -it } * (etaRatio * cosTheta1 - cosTheta2)
 
             val R0 = ((1 - indexOfReflection) / (1 + indexOfReflection)).pow(2)
             val R = R0 + (1 - R0) * (1 - cosTheta1).pow(5)

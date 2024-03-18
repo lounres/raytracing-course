@@ -199,12 +199,15 @@ internal fun Command.requireNumberOfArguments(expectedNumber: Int) {
     require(this.parameters.size == expectedNumber) { "Illegal number of arguments of '${this.command}' command: ${this.parameters.size}. Got a command '${this.command} ${this.parameters.joinToString(prefix = "", postfix = "")}'." }
 }
 
+internal val spaceRegex = Regex("\\s+")
+
 public fun String.parseDescription(): SceneDescription {
     val commands = this
         .lines()
+        .map { it.substringBefore("#").trim() }
         .filter { it.isNotBlank() }
         .map { line ->
-            val parts = line.split(" ")
+            val parts = line.split(spaceRegex)
             Command(
                 command = parts[0],
                 parameters = parts.drop(1).map { it.toDouble() }

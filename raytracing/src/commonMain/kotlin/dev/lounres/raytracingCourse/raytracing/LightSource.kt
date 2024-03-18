@@ -1,7 +1,6 @@
 package dev.lounres.raytracingCourse.raytracing
 
 import dev.lounres.raytracingCourse.euclideanGeometry.*
-import dev.lounres.raytracingCourse.raytracing.figure.Figure
 import dev.lounres.raytracingCourse.raytracing.light.LightIntensity
 
 

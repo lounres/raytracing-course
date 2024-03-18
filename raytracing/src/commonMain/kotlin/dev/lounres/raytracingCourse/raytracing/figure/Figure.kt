@@ -34,8 +34,7 @@ public data class Plane(val normal: Vector, val valueAtZero: Double) : Figure {
     override fun outerNormalFor(position: Point): Vector = normal
 }
 
-public data class Ellipsoid(val rX: Double, val rY: Double, val rZ: Double, val position: Point, val rotation: Rotation) :
-    Figure {
+public data class Ellipsoid(val rX: Double, val rY: Double, val rZ: Double, val position: Point, val rotation: Rotation) : Figure {
     override fun intersect(ray: Ray): Double? {
         val (pX, pY, pZ) = rotation.inverseApplyTo(ray.position - this.position)
         val (dX, dY, dZ) = rotation.inverseApplyTo(ray.direction)
