@@ -11,7 +11,7 @@
       <option name="taskNames">
         <list>
           <option value=":app:run" />
-          <option value="--args=&quot;C:\Programming\raytracing-course\samples\raytracing.scene C:\Programming\raytracing-course\samples\raytracing.ppm&quot;" />
+          <option value="--args=&quot;..\samples\raytracing.scene ..\samples\raytracing.ppm&quot;" />
         </list>
       </option>
       <option name="vmOptions" />
