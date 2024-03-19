@@ -14,19 +14,19 @@ public interface Material {
     public fun traceIncomingRay(incomingRay: Vector, objectColor: Color): LightIntensity
 }
 
-public object Diffusive: Material {
+public data object Diffusive: Material {
     context(Scene.LocalEnvironment)
     override fun traceIncomingRay(incomingRay: Vector, objectColor: Color): LightIntensity =
         traceIncomingLightIntensity() * objectColor
 }
 
-public object Metallic: Material {
+public data object Metallic: Material {
     context(Scene.LocalEnvironment)
     override fun traceIncomingRay(incomingRay: Vector, objectColor: Color): LightIntensity =
         traceOutgoingRay(incomingRay - localOuterNormal * (localOuterNormal dot incomingRay * 2.0 / localOuterNormal.norm)) * objectColor
 }
 
-public class Dielectric(
+public data class Dielectric(
     public val indexOfReflection: Double
 ): Material {
     context(Scene.LocalEnvironment)
