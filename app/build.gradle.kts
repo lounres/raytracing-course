@@ -12,6 +12,7 @@ kotlin {
                 implementation(projects.sceneDescriptionParser)
                 implementation(projects.raytracing)
                 implementation(projects.ppmWriter)
+                implementation(libs.kotlinx.coroutines.core)
             }
         }
     }

@@ -15,18 +15,21 @@ public data class SceneDescription(
     val scene: SimpleScene,
     val camera: Camera,
     val recursionLimit: UInt,
+    val samplesPerPixel: UInt,
 )
 
 internal data class SceneDescriptionBuilder(
     val sceneBuilder: SceneBuilder = SceneBuilder(),
     val cameraBuilder: CameraBuilder = CameraBuilder(),
-    var recursionLimit: UInt? = null
+    var recursionLimit: UInt? = null,
+    var samplesPerPixel: UInt? = null,
 ) {
     fun build(): SceneDescription =
         SceneDescription(
             scene = sceneBuilder.build(),
             camera = cameraBuilder.build(),
-            recursionLimit = recursionLimit ?: throw IllegalStateException("Recursion limit is not specified.")
+            recursionLimit = recursionLimit ?: throw IllegalStateException("Recursion limit is not specified."),
+            samplesPerPixel = samplesPerPixel ?: throw IllegalStateException("Number of samples per pixel is not specified."),
         )
 }
 
@@ -34,18 +37,12 @@ internal data class SceneBuilder(
     var backgroundColor: LightIntensity? = null,
     val sceneObjects: MutableList<SceneObject> = mutableListOf(),
     var newSceneObject: SceneObjectBuilder? = null,
-    var ambientLight: LightIntensity? = null,
-    val lightSources: MutableList<LightSource> = mutableListOf(),
-    var newLightSource: LightSourceBuilder? = null,
 ) {
     fun build(): SimpleScene {
         newSceneObject?.let { sceneObjects.add(it.build()) }
-        newLightSource?.let { lightSources.add(it.build()) }
         return SimpleScene(
             backgroundLightIntensity = backgroundColor ?: throw IllegalArgumentException("Background color is not specified."),
             sceneObjects = sceneObjects,
-            ambientLight = ambientLight ?: throw IllegalArgumentException("Ambient light is not specified."),
-            lightSources = lightSources,
         )
     }
 }
@@ -74,12 +71,14 @@ internal data class SceneObjectBuilder(
     val figureBuilder: FigureBuilder,
     var color: Color? = null,
     var materialBuilder: MaterialBuilder? = null,
+    var emission: LightIntensity? = null
 ) {
     fun build(): SceneObject =
         SceneObject(
             figure = figureBuilder.build(),
             color = color ?: throw IllegalArgumentException("Scene object color is not specified."),
             material = (materialBuilder ?: DiffusiveBuilder).build(),
+            emission = emission ?: LightIntensity.None
         )
 }
 
@@ -157,39 +156,6 @@ internal data class BoxBuilder(
     )
 }
 
-internal interface LightSourceBuilder {
-    fun build(): LightSource
-    var lightIntensity: LightIntensity?
-}
-
-internal data class UndefinedLightSourceBuilder(
-    override var lightIntensity: LightIntensity? = null,
-): LightSourceBuilder {
-    override fun build(): LightSource = throw IllegalArgumentException("Light source type is undefined.")
-}
-
-internal data class PointLightSourceBuilder(
-    var position: Point? = null,
-    var attenuation: Attenuation? = null,
-    override var lightIntensity: LightIntensity? = null,
-): LightSourceBuilder {
-    override fun build(): PointLightSource = PointLightSource(
-        position = position ?: throw IllegalArgumentException("Point light source position is not specified."),
-        attenuation = attenuation ?: throw IllegalArgumentException("Point light source attenuation is not specified."),
-        lightIntensity = lightIntensity ?: throw IllegalArgumentException("Point light source light intensity is not specified."),
-    )
-}
-
-internal data class DirectedLightSourceBuilder(
-    var directionToLight: Vector? = null,
-    override var lightIntensity: LightIntensity? = null,
-): LightSourceBuilder {
-    override fun build(): DirectedLightSource = DirectedLightSource(
-        directionToLight = directionToLight ?: throw IllegalArgumentException("Directed light source direction is not specified."),
-        lightIntensity = lightIntensity ?: throw IllegalArgumentException("Directed light source light intensity is not specified."),
-    )
-}
-
 internal data class Command(
     val command: String,
     val parameters: List<Double>,
@@ -233,10 +199,10 @@ public fun String.parseDescription(): SceneDescription {
             require(sceneDescriptionBuilder.recursionLimit == null) { "Recursion limit is already specified." }
             sceneDescriptionBuilder.recursionLimit = command.parameters[0].toUInt()
         }
-        "AMBIENT_LIGHT" -> {
-            command.requireNumberOfArguments(3)
-            require(sceneDescriptionBuilder.sceneBuilder.ambientLight == null) { "Recursion limit is already specified." }
-            sceneDescriptionBuilder.sceneBuilder.ambientLight = LightIntensity(command.parameters[0], command.parameters[1], command.parameters[2])
+        "SAMPLES" -> {
+            command.requireNumberOfArguments(1)
+            require(sceneDescriptionBuilder.samplesPerPixel == null) { "Number of samples per pixel is already specified." }
+            sceneDescriptionBuilder.samplesPerPixel = command.parameters[0].toUInt()
         }
         "CAMERA_POSITION" -> {
             command.requireNumberOfArguments(3)
@@ -321,6 +287,13 @@ public fun String.parseDescription(): SceneDescription {
             require(newSceneObject.color == null) { "Scene object color is already specified." }
             newSceneObject.color = Color(command.parameters[0], command.parameters[1], command.parameters[2])
         }
+        "EMISSION" -> {
+            command.requireNumberOfArguments(3)
+            val newSceneObject = sceneDescriptionBuilder.sceneBuilder.newSceneObject
+            require(newSceneObject != null) { "Cannot assign color. There is no current scene object to process." }
+            require(newSceneObject.emission == null) { "Scene object color is already specified." }
+            newSceneObject.emission = LightIntensity(command.parameters[0], command.parameters[1], command.parameters[2])
+        }
         "METALLIC" -> {
             command.requireNumberOfArguments(0)
             val newSceneObject = sceneDescriptionBuilder.sceneBuilder.newSceneObject
@@ -342,66 +315,6 @@ public fun String.parseDescription(): SceneDescription {
             val newSceneObjectMaterialBuilder = newSceneObject.materialBuilder
             require(newSceneObjectMaterialBuilder is DielectricBuilder) { "Scene object material is already specified." }
             newSceneObjectMaterialBuilder.indexOfReflection = command.parameters[0]
-        }
-        "NEW_LIGHT" -> {
-            command.requireNumberOfArguments(0)
-            sceneDescriptionBuilder.sceneBuilder.newLightSource?.let { oldSceneObject -> sceneDescriptionBuilder.sceneBuilder.lightSources.add(oldSceneObject.build()) }
-            sceneDescriptionBuilder.sceneBuilder.newLightSource = UndefinedLightSourceBuilder()
-        }
-        "LIGHT_INTENSITY" -> {
-            command.requireNumberOfArguments(3)
-            val newLightSource = sceneDescriptionBuilder.sceneBuilder.newLightSource
-            require(newLightSource != null) { "Cannot assign light intensity. There is no current light source to process." }
-            require(newLightSource.lightIntensity == null) { "Light source light intensity is already specified." }
-            newLightSource.lightIntensity = LightIntensity(command.parameters[0], command.parameters[1], command.parameters[2])
-        }
-        "LIGHT_DIRECTION" -> {
-            command.requireNumberOfArguments(3)
-            val newLightSource = sceneDescriptionBuilder.sceneBuilder.newLightSource
-            require(newLightSource != null) { "Cannot assign light intensity. There is no current light source to process." }
-            sceneDescriptionBuilder.sceneBuilder.newLightSource = when (newLightSource) {
-                is DirectedLightSourceBuilder -> newLightSource.also {
-                    require(it.directionToLight == null) { "Light source light direction is already specified." }
-                    it.directionToLight = Vector(command.parameters[0], command.parameters[1], command.parameters[2])
-                }
-                is UndefinedLightSourceBuilder -> DirectedLightSourceBuilder(
-                    lightIntensity = newLightSource.lightIntensity,
-                    directionToLight = Vector(command.parameters[0], command.parameters[1], command.parameters[2])
-                )
-                else -> throw IllegalArgumentException("Cannot assign light direction. Current light source is of another type.")
-            }
-        }
-        "LIGHT_POSITION" -> {
-            command.requireNumberOfArguments(3)
-            val newLightSource = sceneDescriptionBuilder.sceneBuilder.newLightSource
-            require(newLightSource != null) { "Cannot assign light intensity. There is no current light source to process." }
-            sceneDescriptionBuilder.sceneBuilder.newLightSource = when (newLightSource) {
-                is PointLightSourceBuilder -> newLightSource.also {
-                    require(it.position == null) { "Light source light direction is already specified." }
-                    it.position = Point(command.parameters[0], command.parameters[1], command.parameters[2])
-                }
-                is UndefinedLightSourceBuilder -> PointLightSourceBuilder(
-                    lightIntensity = newLightSource.lightIntensity,
-                    position = Point(command.parameters[0], command.parameters[1], command.parameters[2])
-                )
-                else -> throw IllegalArgumentException("Cannot assign light direction. Current light source is of another type.")
-            }
-        }
-        "LIGHT_ATTENUATION" -> {
-            command.requireNumberOfArguments(3)
-            val newLightSource = sceneDescriptionBuilder.sceneBuilder.newLightSource
-            require(newLightSource != null) { "Cannot assign light intensity. There is no current light source to process." }
-            sceneDescriptionBuilder.sceneBuilder.newLightSource = when (newLightSource) {
-                is PointLightSourceBuilder -> newLightSource.also {
-                    require(it.attenuation == null) { "Light source light direction is already specified." }
-                    it.attenuation = Attenuation(command.parameters[0], command.parameters[1], command.parameters[2])
-                }
-                is UndefinedLightSourceBuilder -> PointLightSourceBuilder(
-                    lightIntensity = newLightSource.lightIntensity,
-                    attenuation = Attenuation(command.parameters[0], command.parameters[1], command.parameters[2])
-                )
-                else -> throw IllegalArgumentException("Cannot assign light direction. Current light source is of another type.")
-            }
         }
         else -> println("Unknown command: ${command.command} ${command.parameters.joinToString()}")
     }

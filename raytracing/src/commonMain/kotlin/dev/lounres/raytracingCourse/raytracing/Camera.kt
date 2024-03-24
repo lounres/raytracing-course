@@ -5,6 +5,7 @@ import dev.lounres.raytracingCourse.euclideanGeometry.Vector
 import dev.lounres.raytracingCourse.euclideanGeometry.plus
 import dev.lounres.raytracingCourse.euclideanGeometry.times
 import kotlin.math.tan
+import kotlin.random.Random
 
 
 public data class Camera(
@@ -17,12 +18,12 @@ public data class Camera(
     val imageWidth: UInt,
     val imageHeight: UInt,
 ) {
-    public fun rayForPixel(x: UInt, y: UInt): Ray =
+    public fun rayForPixel(x: UInt, y: UInt, random: Random): Ray =
         Ray(
             position = this.position,
             direction =
-                    right * (((2 * x.toInt() + 1) / imageWidth.toDouble() - 1) * fovXTan) +
-                    up * ((2 * y.toInt() + 1) / imageHeight.toDouble() - 1) * fovYTan +
+                    right * ((2 * (x.toInt() + random.nextDouble()) / imageWidth.toDouble() - 1) * fovXTan) +
+                    up * (2 * (y.toInt() + random.nextDouble()) / imageHeight.toDouble() - 1) * fovYTan +
                     forward
         )
 }

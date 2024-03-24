@@ -7,6 +7,7 @@ import dev.lounres.raytracingCourse.raytracing.light.Color
 import dev.lounres.raytracingCourse.raytracing.light.GammaCorrection
 import dev.lounres.raytracingCourse.raytracing.light.LightIntensity
 import dev.lounres.raytracingCourse.raytracing.light.ToneMapping
+import kotlin.random.Random
 
 
 public data class Intersection(
@@ -17,35 +18,36 @@ public data class Intersection(
 public interface Scene {
     public fun trace(
         ray: Ray,
+        random: Random,
         recursionLimit: UInt,
         toneMapping: ToneMapping = ToneMapping.Aces,
         gammaCorrection: GammaCorrection = GammaCorrection
     ): Color
 
-    public fun intersect(ray: Ray, fromSceneObject: Int? = null): Intersection?
-
     public interface LocalEnvironment {
+        public val random: Random
+
         public val position: Point
         public val localOuterNormal: Vector
+        public val objectColor: Color
+        public val emission: LightIntensity
 
         public fun traceOutgoingRay(outgoingRayDirection: Vector): LightIntensity
-        public fun traceIncomingLightIntensity(): LightIntensity
     }
 }
 
 public data class SceneObject(
     val figure: Figure,
     val color: Color,
-    val material: Material
+    val material: Material,
+    val emission: LightIntensity,
 )
 
 public data class SimpleScene(
     val backgroundLightIntensity: LightIntensity,
     val sceneObjects: List<SceneObject>,
-    val ambientLight: LightIntensity,
-    val lightSources: List<LightSource>,
 ) : Scene {
-    override fun intersect(ray: Ray, fromSceneObject: Int?): Intersection? {
+    internal fun intersect(ray: Ray, fromSceneObject: Int? = null): Intersection? {
         var closestIntersection: Intersection? = null
         for ((sceneObjectIndex, sceneObject) in sceneObjects.withIndex()) {
             val intersectionMoment = if (sceneObjectIndex != fromSceneObject) sceneObject.figure.intersect(ray) else sceneObject.figure.intersectAgain(ray)
@@ -56,13 +58,14 @@ public data class SimpleScene(
     }
 
     private inner class LocalEnvironmentImpl(
+        override val random: Random,
         val currentObject: Int,
         override val position: Point,
         override val localOuterNormal: Vector,
         val recursionLimit: UInt,
     ) : Scene.LocalEnvironment {
-        override fun traceIncomingLightIntensity(): LightIntensity =
-            lightSources.fold(ambientLight) { acc, lightSource -> acc + lightSource.lightIntensityAt(this@SimpleScene, currentObject, position, localOuterNormal) }
+        override val objectColor: Color = sceneObjects[currentObject].color
+        override val emission: LightIntensity = sceneObjects[currentObject].emission
         override fun traceOutgoingRay(outgoingRayDirection: Vector): LightIntensity {
             if (recursionLimit == 0u) return LightIntensity.None
 
@@ -72,28 +75,30 @@ public data class SimpleScene(
                 val nextObject = sceneObjects[nextIntersection.sceneObjectIndex]
                 val nextPosition = outgoingRay.atMoment(nextIntersection.moment)
                 val nextLocalEnvironment = LocalEnvironmentImpl(
+                    random = random,
                     currentObject = nextIntersection.sceneObjectIndex,
                     position = nextPosition,
                     localOuterNormal = nextObject.figure.outerNormalFor(nextPosition),
                     recursionLimit = recursionLimit - 1u,
                 )
-                with(nextLocalEnvironment) { nextObject.material.traceIncomingRay(outgoingRayDirection, nextObject.color) }
+                nextLocalEnvironment.run { nextObject.material.traceIncomingRay(outgoingRayDirection) }
             } else backgroundLightIntensity
         }
     }
 
-    override fun trace(ray: Ray, recursionLimit: UInt, toneMapping: ToneMapping, gammaCorrection: GammaCorrection): Color {
+    override fun trace(ray: Ray, random: Random, recursionLimit: UInt, toneMapping: ToneMapping, gammaCorrection: GammaCorrection): Color {
         val firstIntersection = this@SimpleScene.intersect(ray)
         val lightIntensity = if (firstIntersection != null) {
             val firstObject = sceneObjects[firstIntersection.sceneObjectIndex]
             val firstPosition = ray.atMoment(firstIntersection.moment)
             val firstLocalEnvironment = LocalEnvironmentImpl(
+                random = random,
                 currentObject = firstIntersection.sceneObjectIndex,
                 position = firstPosition,
                 localOuterNormal = firstObject.figure.outerNormalFor(position = firstPosition),
                 recursionLimit = recursionLimit,
             )
-            with(firstLocalEnvironment) { firstObject.material.traceIncomingRay(ray.direction, firstObject.color) }
+            with(firstLocalEnvironment) { firstObject.material.traceIncomingRay(ray.direction) }
         } else backgroundLightIntensity
 
         return gammaCorrection.correct(toneMapping.map(lightIntensity))
