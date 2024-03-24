@@ -76,7 +76,7 @@ internal data class SceneObjectBuilder(
     fun build(): SceneObject =
         SceneObject(
             figure = figureBuilder.build(),
-            color = color ?: throw IllegalArgumentException("Scene object color is not specified."),
+            color = color ?: Color(0.0, 0.0, 0.0),
             material = (materialBuilder ?: DiffusiveBuilder).build(),
             emission = emission ?: LightIntensity.None
         )
