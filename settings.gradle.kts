@@ -21,6 +21,7 @@ pluginManagement {
 
 plugins {
     id("dev.lounres.gradle.stal") version "0.3.1"
+    id("org.gradle.toolchains.foojay-resolver-convention") version("0.8.0")
 }
 
 stal {
