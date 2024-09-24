@@ -1,4 +1,4 @@
-package dev.lounres.raytracingCourse.raytracing
+package dev.lounres.raytracingCourse.raytracing.geometry
 
 import dev.lounres.raytracingCourse.euclideanGeometry.Point
 import dev.lounres.raytracingCourse.euclideanGeometry.Vector

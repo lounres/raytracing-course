@@ -4,6 +4,7 @@ import dev.lounres.raytracingCourse.euclideanGeometry.Point
 import dev.lounres.raytracingCourse.euclideanGeometry.Vector
 import dev.lounres.raytracingCourse.euclideanGeometry.plus
 import dev.lounres.raytracingCourse.euclideanGeometry.times
+import dev.lounres.raytracingCourse.raytracing.geometry.Ray
 import kotlin.math.tan
 import kotlin.random.Random
 

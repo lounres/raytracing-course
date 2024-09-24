@@ -7,6 +7,8 @@ import dev.lounres.raytracingCourse.raytracing.figure.Box
 import dev.lounres.raytracingCourse.raytracing.figure.Ellipsoid
 import dev.lounres.raytracingCourse.raytracing.figure.Figure
 import dev.lounres.raytracingCourse.raytracing.figure.Plane
+import dev.lounres.raytracingCourse.raytracing.geometry.Rotation
+import dev.lounres.raytracingCourse.raytracing.geometry.applyTo
 import dev.lounres.raytracingCourse.raytracing.light.Color
 import dev.lounres.raytracingCourse.raytracing.light.LightIntensity
 
@@ -114,7 +116,7 @@ internal data class PlaneBuilder(
     override var rotation: Rotation? = null,
 ): FigureBuilder {
     override fun build(): Plane {
-        val actualRotation = rotation ?: Rotation(1.0 ,0.0, 0.0, 0.0)
+        val actualRotation = rotation ?: Rotation(1.0, 0.0, 0.0, 0.0)
         val actualNormal = actualRotation.applyTo(normal)
         val actualPosition = position ?: Point(0.0, 0.0, 0.0)
         return Plane(
@@ -136,7 +138,7 @@ internal data class EllipsoidBuilder(
         rY = rY,
         rZ = rZ,
         position = position ?: Point(0.0, 0.0, 0.0),
-        rotation = rotation ?: Rotation(1.0 ,0.0, 0.0, 0.0),
+        rotation = rotation ?: Rotation(1.0, 0.0, 0.0, 0.0),
     )
 }
 
@@ -152,7 +154,7 @@ internal data class BoxBuilder(
         sizeY = sizeY,
         sizeZ = sizeZ,
         position = position ?: Point(0.0, 0.0, 0.0),
-        rotation = rotation ?: Rotation(1.0 ,0.0, 0.0, 0.0),
+        rotation = rotation ?: Rotation(1.0, 0.0, 0.0, 0.0),
     )
 }
 
@@ -278,7 +280,12 @@ public fun String.parseDescription(): SceneDescription {
             val newSceneObject = sceneDescriptionBuilder.sceneBuilder.newSceneObject
             require(newSceneObject != null) { "Cannot assign rotation. There is no current scene object to process." }
             require(newSceneObject.figureBuilder.rotation == null) { "Scene object rotation is already specified." }
-            newSceneObject.figureBuilder.rotation = Rotation(x = command.parameters[0], y = command.parameters[1], z = command.parameters[2], w = command.parameters[3])
+            newSceneObject.figureBuilder.rotation = Rotation(
+                x = command.parameters[0],
+                y = command.parameters[1],
+                z = command.parameters[2],
+                w = command.parameters[3]
+            )
         }
         "COLOR" -> {
             command.requireNumberOfArguments(3)

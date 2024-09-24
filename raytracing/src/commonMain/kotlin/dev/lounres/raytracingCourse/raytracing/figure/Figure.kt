@@ -1,10 +1,10 @@
 package dev.lounres.raytracingCourse.raytracing.figure
 
 import dev.lounres.raytracingCourse.euclideanGeometry.*
-import dev.lounres.raytracingCourse.raytracing.Ray
-import dev.lounres.raytracingCourse.raytracing.Rotation
-import dev.lounres.raytracingCourse.raytracing.applyTo
-import dev.lounres.raytracingCourse.raytracing.inverseApplyTo
+import dev.lounres.raytracingCourse.raytracing.geometry.Ray
+import dev.lounres.raytracingCourse.raytracing.geometry.Rotation
+import dev.lounres.raytracingCourse.raytracing.geometry.applyTo
+import dev.lounres.raytracingCourse.raytracing.geometry.inverseApplyTo
 import kotlin.math.*
 
 
