@@ -26,7 +26,7 @@ internal fun Random.cosineWeightedRandomVectorOnUnitHemisphere(centralVector: Ve
     val normalizedCentralVector = centralVector.normalized()
     val vectorOnSphere: Vector = nextVectorInUnitSphere().normalized()
     val shiftedVector = vectorOnSphere + normalizedCentralVector
-    return shiftedVector / shiftedVector.length
+    return shiftedVector.normalized()
 }
 
 public interface Material {
@@ -39,7 +39,7 @@ public data object Diffusive: Material {
     override fun traceIncomingRay(incomingRay: Vector): LightIntensity {
 //        val outgoingRay: Vector = randomVectorOnUnitHemisphere(localOuterNormal.let { if (it dot incomingRay < 0.0) it else -it })
         val outgoingRay: Vector = cosineWeightedRandomVectorOnUnitHemisphere(localOuterNormal.let { if (it dot incomingRay < 0.0) it else -it })
-//        return sceneObject.emission + traceOutgoingRay(outgoingRay) * sceneObject.color * (2.0 * abs(incomingRay dot localOuterNormal) / localOuterNormal.length)
+//        return sceneObject.emission + traceOutgoingRay(outgoingRay) * sceneObject.color * (2.0 * abs(incomingRay dot localOuterNormal) / incomingRay.length / localOuterNormal.length)
         return sceneObject.emission + traceOutgoingRay(outgoingRay) * sceneObject.color
     }
 }
@@ -55,7 +55,7 @@ public data class Dielectric(
 ): Material {
     context(Random, Scene, Scene.LocalEnvironment)
     override fun traceIncomingRay(incomingRay: Vector): LightIntensity {
-        val reflectedVector = incomingRay - localOuterNormal * (localOuterNormal dot incomingRay * 2.0 / localOuterNormal.norm)
+        val reflectedVector = incomingRay - localOuterNormal * ((localOuterNormal dot incomingRay) * 2.0 / localOuterNormal.norm)
 
         val etaRatio = if (localOuterNormal dot incomingRay > 0.0) 1 / indexOfReflection else indexOfReflection
         val cosTheta1 = abs(localOuterNormal dot incomingRay / localOuterNormal.length / incomingRay.length)
