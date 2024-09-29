@@ -2,6 +2,7 @@ package dev.lounres.raytracingCourse.raytracing
 
 import dev.lounres.raytracingCourse.euclideanGeometry.*
 import dev.lounres.raytracingCourse.raytracing.light.LightIntensity
+import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.pow
 import kotlin.math.sqrt
@@ -37,10 +38,9 @@ public interface Material {
 public data object Diffusive: Material {
     context(Random, Scene, Scene.LocalEnvironment)
     override fun traceIncomingRay(incomingRay: Vector): LightIntensity {
-//        val outgoingRay: Vector = randomVectorOnUnitHemisphere(localOuterNormal.let { if (it dot incomingRay < 0.0) it else -it })
-        val outgoingRay: Vector = cosineWeightedRandomVectorOnUnitHemisphere(localOuterNormal.let { if (it dot incomingRay < 0.0) it else -it })
-//        return sceneObject.emission + traceOutgoingRay(outgoingRay) * sceneObject.color * (2.0 * abs(incomingRay dot localOuterNormal) / incomingRay.length / localOuterNormal.length)
-        return sceneObject.emission + traceOutgoingRay(outgoingRay) * sceneObject.color
+//        val probabilityDensity = 0.5 / PI + ()
+        val incomingLightIntensity: LightIntensity = traceOutgoingRay(cosineWeightedRandomVectorOnUnitHemisphere(localOuterNormal.let { if (it dot incomingRay < 0.0) it else -it }))
+        return sceneObject.emission + incomingLightIntensity * sceneObject.color
     }
 }
 
@@ -58,7 +58,7 @@ public data class Dielectric(
         val reflectedVector = incomingRay - localOuterNormal * ((localOuterNormal dot incomingRay) * 2.0 / localOuterNormal.norm)
 
         val etaRatio = if (localOuterNormal dot incomingRay > 0.0) 1 / indexOfReflection else indexOfReflection
-        val cosTheta1 = abs(localOuterNormal dot incomingRay / localOuterNormal.length / incomingRay.length)
+        val cosTheta1 = abs((localOuterNormal dot incomingRay) / localOuterNormal.length / incomingRay.length)
         val sinTheta2 = etaRatio * sqrt(1 - cosTheta1 * cosTheta1)
 
         return sceneObject.emission + if (sinTheta2 < 1.0) {

@@ -33,25 +33,31 @@ fun main(args: Array<String>) {
         outputFile.writePpmImage(
             imageWidth = camera.imageWidth,
             imageHeight = camera.imageHeight,
-            bytesToWrite =
-                buildList<Byte>((camera.imageHeight * camera.imageWidth).toInt() * 3) {
-                    for (y in (camera.imageHeight - 1u) downTo 0u) for (x in 0u..<camera.imageWidth) {
-                        val lightIntensity = runBlocking(Dispatchers.Default) {
-                            List(numberOfSamples.toInt()) {
-                                async {
-                                    scene.trace(
-                                        camera.rayForPixel(x, y, random),
-                                        recursionLimit = recursionLimit
-                                    )
-                                }
-                            }.awaitAll()
-                        }.reduce { acc, lightIntensity -> acc + lightIntensity } / numberOfSamples.toDouble()
-                        val color = gammaCorrection.correct(toneMapping.map(lightIntensity))
-                        add(round(255 * color.r).toInt().toByte())
-                        add(round(255 * color.g).toInt().toByte())
-                        add(round(255 * color.b).toInt().toByte())
+            bytesToWrite = runBlocking(Dispatchers.Default) {
+                List(camera.imageHeight.toInt()) {
+                    val y = camera.imageHeight - 1u - it.toUInt()
+                    List(camera.imageWidth.toInt()) {
+                        val x = it.toUInt()
+                        async {
+                            val lightIntensity =
+                                List(numberOfSamples.toInt()) {
+                                    run {
+                                        scene.trace(
+                                            camera.rayForPixel(x, y, random),
+                                            recursionLimit = recursionLimit
+                                        )
+                                    }
+                                }.reduce { acc, lightIntensity -> acc + lightIntensity } / numberOfSamples.toDouble()
+                            val color = gammaCorrection.correct(toneMapping.map(lightIntensity))
+                            listOf(
+                                round(255 * color.r).toInt().toByte(),
+                                round(255 * color.g).toInt().toByte(),
+                                round(255 * color.b).toInt().toByte(),
+                            )
+                        }
                     }
-                }.toByteArray()
+                }.flatten().awaitAll().flatten().toByteArray()
+            }
         )
     }
 }

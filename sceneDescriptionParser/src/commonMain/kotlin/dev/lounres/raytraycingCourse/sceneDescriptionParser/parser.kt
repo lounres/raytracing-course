@@ -2,11 +2,14 @@ package dev.lounres.raytraycingCourse.sceneDescriptionParser
 
 import dev.lounres.raytracingCourse.euclideanGeometry.Point
 import dev.lounres.raytracingCourse.euclideanGeometry.Vector
+import dev.lounres.raytracingCourse.euclideanGeometry.plus
 import dev.lounres.raytracingCourse.raytracing.*
 import dev.lounres.raytracingCourse.raytracing.figure.Box
 import dev.lounres.raytracingCourse.raytracing.figure.Ellipsoid
 import dev.lounres.raytracingCourse.raytracing.figure.Figure
+import dev.lounres.raytracingCourse.raytracing.figure.FiniteFigure
 import dev.lounres.raytracingCourse.raytracing.figure.Plane
+import dev.lounres.raytracingCourse.raytracing.figure.Triangle
 import dev.lounres.raytracingCourse.raytracing.geometry.Rotation
 import dev.lounres.raytracingCourse.raytracing.geometry.applyTo
 import dev.lounres.raytracingCourse.raytracing.light.Color
@@ -35,16 +38,28 @@ internal data class SceneDescriptionBuilder(
         )
 }
 
+private inline fun <T, reified R> Iterable<T>.partitionIsInstance(): Pair<List<R>, List<T>> {
+    val destination1 = mutableListOf<R>()
+    val destination2 = mutableListOf<T>()
+    for (element in this) if (element is R) destination1.add(element) else destination2.add(element)
+    return Pair(destination1, destination2)
+}
+
 internal data class SceneBuilder(
     var backgroundColor: LightIntensity? = null,
-    val sceneObjects: MutableList<SceneObject> = mutableListOf(),
+    val sceneObjects: MutableList<SceneObject<Figure>> = mutableListOf(),
     var newSceneObject: SceneObjectBuilder? = null,
 ) {
     fun build(): SimpleScene {
         newSceneObject?.let { sceneObjects.add(it.build()) }
+        val finiteObjects = mutableListOf<SceneObject<FiniteFigure>>()
+        val restObjects = mutableListOf<SceneObject<Figure>>()
+        @Suppress("UNCHECKED_CAST")
+        for (element in sceneObjects) if (element.figure is FiniteFigure) finiteObjects.add(element as SceneObject<FiniteFigure>) else restObjects.add(element)
         return SimpleScene(
             backgroundLightIntensity = backgroundColor ?: throw IllegalArgumentException("Background color is not specified."),
-            sceneObjects = sceneObjects,
+            finiteSceneObjects = finiteObjects,
+            sceneObjects = restObjects,
         )
     }
 }
@@ -75,7 +90,7 @@ internal data class SceneObjectBuilder(
     var materialBuilder: MaterialBuilder? = null,
     var emission: LightIntensity? = null
 ) {
-    fun build(): SceneObject =
+    fun build(): SceneObject<Figure> =
         SceneObject(
             figure = figureBuilder.build(),
             color = color ?: Color(0.0, 0.0, 0.0),
@@ -156,6 +171,27 @@ internal data class BoxBuilder(
         position = position ?: Point(0.0, 0.0, 0.0),
         rotation = rotation ?: Rotation(1.0, 0.0, 0.0, 0.0),
     )
+}
+
+internal data class TriangleBuilder(
+    val vertex0: Vector,
+    val vertex1: Vector,
+    val vertex2: Vector,
+    override var position: Point? = null,
+    override var rotation: Rotation? = null,
+): FigureBuilder {
+    override fun build(): Triangle {
+        val actualRotation = rotation ?: Rotation(1.0, 0.0, 0.0, 0.0)
+        val actualVertex0 = actualRotation.applyTo(vertex0)
+        val actualVertex1 = actualRotation.applyTo(vertex1)
+        val actualVertex2 = actualRotation.applyTo(vertex2)
+        val actualPosition = position ?: Point(0.0, 0.0, 0.0)
+        return Triangle(
+            vertex0 = actualPosition + actualVertex0,
+            vertex1 = actualPosition + actualVertex1,
+            vertex2 = actualPosition + actualVertex2,
+        )
+    }
 }
 
 internal data class Command(
@@ -265,6 +301,18 @@ public fun String.parseDescription(): SceneDescription {
                         sizeX = command.parameters[0],
                         sizeY = command.parameters[1],
                         sizeZ = command.parameters[2],
+                    )
+                )
+        }
+        "TRIANGLE" -> {
+            command.requireNumberOfArguments(9)
+            require(sceneDescriptionBuilder.sceneBuilder.newSceneObject == null) { "Previous scene object is not yet processed. Probably there is a scene object declaration without 'NEW_PRIMITIVE' command" }
+            sceneDescriptionBuilder.sceneBuilder.newSceneObject =
+                SceneObjectBuilder(
+                    figureBuilder = TriangleBuilder(
+                        vertex0 = Vector(command.parameters[0], command.parameters[1], command.parameters[2]),
+                        vertex1 = Vector(command.parameters[3], command.parameters[4], command.parameters[5]),
+                        vertex2 = Vector(command.parameters[6], command.parameters[7], command.parameters[8]),
                     )
                 )
         }

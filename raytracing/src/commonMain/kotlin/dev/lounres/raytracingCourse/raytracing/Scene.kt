@@ -3,11 +3,17 @@ package dev.lounres.raytracingCourse.raytracing
 import dev.lounres.raytracingCourse.euclideanGeometry.Point
 import dev.lounres.raytracingCourse.euclideanGeometry.Vector
 import dev.lounres.raytracingCourse.raytracing.figure.Figure
+import dev.lounres.raytracingCourse.raytracing.figure.FiniteFigure
 import dev.lounres.raytracingCourse.raytracing.geometry.Ray
 import dev.lounres.raytracingCourse.raytracing.light.Color
 import dev.lounres.raytracingCourse.raytracing.light.LightIntensity
 import kotlin.random.Random
 
+
+internal data class Intersection(
+    val moment: Double,
+    val sceneObject: SceneObject<Figure>,
+)
 
 public interface Scene {
     context(Random)
@@ -20,38 +26,41 @@ public interface Scene {
     public fun LocalEnvironment.traceOutgoingRay(
         outgoingRayDirection: Vector,
     ): LightIntensity
-
+    
+//    public fun probabilityDensityForRay(ray: Ray): Double
+    
     public data class LocalEnvironment(
-        public val sceneObject: SceneObject,
+        public val sceneObject: SceneObject<Figure>,
         public val position: Point,
         public val localOuterNormal: Vector,
         public val recursionLimit: UInt,
     )
 }
 
-public class SceneObject(
-    public val figure: Figure,
+public class SceneObject<out F: Figure>(
+    public val figure: F,
     public val color: Color,
     public val material: Material,
     public val emission: LightIntensity,
 )
 
-public data class SimpleScene(
-    val backgroundLightIntensity: LightIntensity,
-    val sceneObjects: List<SceneObject>,
+public class SimpleScene(
+    private val backgroundLightIntensity: LightIntensity,
+    finiteSceneObjects: List<SceneObject<FiniteFigure>>,
+    private val sceneObjects: List<SceneObject<Figure>>,
 ) : Scene {
-    public data class Intersection(
-        val moment: Double,
-        val sceneObject: SceneObject,
-    )
+    private val bvh: BVH = BVH(finiteSceneObjects)
     
-    private fun intersect(ray: Ray, fromSceneObject: SceneObject? = null): Intersection? {
+    private fun intersect(ray: Ray, fromSceneObject: SceneObject<Figure>? = null): Intersection? {
         var closestIntersection: Intersection? = null
         for (sceneObject in sceneObjects) {
             val intersectionMoment = if (sceneObject != fromSceneObject) sceneObject.figure.intersect(ray) else sceneObject.figure.intersectAgain(ray)
             if (intersectionMoment != null && (closestIntersection == null || closestIntersection.moment > intersectionMoment))
                 closestIntersection = Intersection(moment = intersectionMoment, sceneObject = sceneObject)
         }
+        val bvhIntersection = bvh.intersect(ray, fromSceneObject)
+        if (bvhIntersection != null && (closestIntersection == null || closestIntersection.moment > bvhIntersection.moment))
+            closestIntersection = bvhIntersection
         return closestIntersection
     }
     
