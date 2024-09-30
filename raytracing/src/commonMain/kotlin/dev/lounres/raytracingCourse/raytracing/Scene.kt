@@ -130,7 +130,7 @@ public class SimpleScene(
     
     context(Random)
     override fun randomTracingSampleFor(point: Point, fromSceneObject: SceneObject<Figure>): TracingSample? {
-        if (lightSources.size == 1 && lightSources.single() == fromSceneObject) return null
+        if (lightSources.isEmpty() || lightSources.size == 1 && lightSources.single() == fromSceneObject) return null
         val sourceIndex: Int
         while (true) {
             val randomIndex = lightSourcesAliasMethod.sample()
