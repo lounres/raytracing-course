@@ -50,25 +50,25 @@ public data object Diffusive: Material {
             val outgoingRayDirection = nextCosineWeightedVectorOnUnitHemisphere(correctNormal)
             val incomingLightIntensity = traceOutgoingRay(outgoingRayDirection)
             val probabilityDensity =
-                0.5 * max(0.0, (outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length) / PI +
+                0.5 * max(0.0, (outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length) +
                         0.5 * probabilityDensityForRay(Ray(position, outgoingRayDirection), sceneObject)
             return sceneObject.emission + incomingLightIntensity * sceneObject.color *
-                    (abs(outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length / PI / probabilityDensity)
+                    (abs(outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length / probabilityDensity)
         } else {
             val sourceLightTracingAttempt = randomTracingSampleFor(position, sceneObject)
             if (sourceLightTracingAttempt != null) {
                 val (outgoingRayDirection, incomingLightIntensity) = sourceLightTracingAttempt
                 val probabilityDensity =
-                    0.5 * max(0.0, (outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length) / PI +
+                    0.5 * max(0.0, (outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length) +
                             0.5 * probabilityDensityForRay(Ray(position, outgoingRayDirection), sceneObject)
                 return sceneObject.emission + incomingLightIntensity * sceneObject.color *
-                        (abs(outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length / PI / probabilityDensity)
+                        (abs(outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length / probabilityDensity)
             } else {
                 val outgoingRayDirection = nextCosineWeightedVectorOnUnitHemisphere(correctNormal)
                 val incomingLightIntensity = traceOutgoingRay(outgoingRayDirection)
-                val probabilityDensity = max(0.0, (outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length) / PI
+                val probabilityDensity = max(0.0, (outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length)
                 return sceneObject.emission + incomingLightIntensity * sceneObject.color *
-                        (abs(outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length / PI / probabilityDensity)
+                        (abs(outgoingRayDirection dot correctNormal) / outgoingRayDirection.length / correctNormal.length / probabilityDensity)
             }
         }
     }
