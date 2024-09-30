@@ -2,6 +2,7 @@ package dev.lounres.raytracingCourse.raytracing
 
 import dev.lounres.raytracingCourse.euclideanGeometry.Point
 import dev.lounres.raytracingCourse.euclideanGeometry.Vector
+import dev.lounres.raytracingCourse.euclideanGeometry.minus
 import dev.lounres.raytracingCourse.raytracing.figure.Figure
 import dev.lounres.raytracingCourse.raytracing.figure.FiniteFigure
 import dev.lounres.raytracingCourse.raytracing.geometry.Ray
@@ -13,6 +14,11 @@ import kotlin.random.Random
 internal data class Intersection(
     val moment: Double,
     val sceneObject: SceneObject<Figure>,
+)
+
+public data class TracingSample(
+    val outgoingRayDirection: Vector,
+    val lightIntensity: LightIntensity,
 )
 
 public interface Scene {
@@ -27,7 +33,10 @@ public interface Scene {
         outgoingRayDirection: Vector,
     ): LightIntensity
     
-//    public fun probabilityDensityForRay(ray: Ray): Double
+    public fun probabilityDensityForRay(ray: Ray, fromSceneObject: SceneObject<Figure>): Double
+    
+    context(Random)
+    public fun randomTracingSampleFor(point: Point, fromSceneObject: SceneObject<Figure>): TracingSample?
     
     public data class LocalEnvironment(
         public val sceneObject: SceneObject<Figure>,
@@ -50,6 +59,10 @@ public class SimpleScene(
     private val sceneObjects: List<SceneObject<Figure>>,
 ) : Scene {
     private val bvh: BVH = BVH(finiteSceneObjects)
+    @Suppress("UNCHECKED_CAST")
+    private val lightSources =
+        ((finiteSceneObjects + sceneObjects).filter { it.figure is FiniteFigure } as List<SceneObject<FiniteFigure>>)
+            .filter { it.emission != LightIntensity.None }
     
     private fun intersect(ray: Ray, fromSceneObject: SceneObject<Figure>? = null): Intersection? {
         var closestIntersection: Intersection? = null
@@ -104,5 +117,18 @@ public class SimpleScene(
             )
             with(nextLocalEnvironment) { nextObject.material.traceIncomingRay(incomingRay = outgoingRayDirection) }
         } else backgroundLightIntensity
+    }
+    
+    override fun probabilityDensityForRay(ray: Ray, fromSceneObject: SceneObject<Figure>): Double =
+        lightSources.sumOf { if (it == fromSceneObject) 0.0 else it.figure.probabilityDensityFor(ray) }
+    
+    context(Random)
+    override fun randomTracingSampleFor(point: Point, fromSceneObject: SceneObject<Figure>): TracingSample? {
+        val restLightSources = lightSources.filter { it != fromSceneObject }
+        if (restLightSources.isEmpty()) return null
+        val lightSource = restLightSources.random(this@Random)
+        val direction = lightSource.figure.lightSourceSample() - point
+        val firstIntersection = intersect(Ray(point, direction), lightSource)
+        return TracingSample(direction, if (firstIntersection == null || firstIntersection.moment > 1.0) lightSource.emission else LightIntensity.None)
     }
 }
