@@ -8,6 +8,7 @@ import dev.lounres.raytracingCourse.raytracing.figure.FiniteFigure
 import dev.lounres.raytracingCourse.raytracing.geometry.Ray
 import dev.lounres.raytracingCourse.raytracing.light.Color
 import dev.lounres.raytracingCourse.raytracing.light.LightIntensity
+import dev.lounres.raytracingCourse.raytracing.random.AliasMethod
 import kotlin.random.Random
 
 
@@ -63,6 +64,11 @@ public class SimpleScene(
     private val lightSources =
         ((finiteSceneObjects + sceneObjects).filter { it.figure is FiniteFigure } as List<SceneObject<FiniteFigure>>)
             .filter { it.emission != LightIntensity.None }
+    private val lightSourcesAliasMethod: AliasMethod = run {
+        val lightEmissionIntensities = lightSources.map { it.emission.let { it.r + it.g + it.b } }
+        val totalIntensity = lightEmissionIntensities.sum()
+        AliasMethod(lightEmissionIntensities.map { it / totalIntensity })
+    }
     
     private fun intersect(ray: Ray, fromSceneObject: SceneObject<Figure>? = null): Intersection? {
         var closestIntersection: Intersection? = null
@@ -124,9 +130,16 @@ public class SimpleScene(
     
     context(Random)
     override fun randomTracingSampleFor(point: Point, fromSceneObject: SceneObject<Figure>): TracingSample? {
-        val restLightSources = lightSources.filter { it != fromSceneObject }
-        if (restLightSources.isEmpty()) return null
-        val lightSource = restLightSources.random(this@Random)
+        if (lightSources.size == 1 && lightSources.single() == fromSceneObject) return null
+        val sourceIndex: Int
+        while (true) {
+            val randomIndex = lightSourcesAliasMethod.sample()
+            if (lightSources[randomIndex] != fromSceneObject) {
+                sourceIndex = randomIndex
+                break
+            }
+        }
+        val lightSource = lightSources[sourceIndex]
         val direction = lightSource.figure.lightSourceSample() - point
         val firstIntersection = intersect(Ray(point, direction), lightSource)
         return TracingSample(direction, if (firstIntersection == null || firstIntersection.moment > 1.0) lightSource.emission else LightIntensity.None)
